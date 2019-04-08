@@ -2,13 +2,15 @@ import numpy as np
 import pickle
 from tensorflow.keras.preprocessing.text import Tokenizer
 
+PATH = '../data/'
 SPLIT = 45000 # 53678 examples into 45000 train and 8678 test
 
 def load():
+    global PATH
     print('Loading data...')
     x = []
     y = []
-    with open('Data/Authors/data-train.csv', 'r') as f:
+    with open(PATH + 'data-train.csv', 'r') as f:
         f.readline() # throw away header row
         for line in f:
             text, author = line.split(',')
@@ -28,10 +30,11 @@ def tokenize(x):
     Tokenize sentences into integers
     https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
     '''
+    global PATH
     print('Tokenizing data...')
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(x)
-    with open('Data/Authors/tokenizer.pickle', 'wb') as f:
+    with open(PATH + 'tokenizer.pickle', 'wb') as f:
         pickle.dump(tokenizer, f)
     return tokenizer
 
@@ -40,17 +43,18 @@ def embed(tokenizer):
     Create matrix of embeddings ordered by indexes used in tokenizer
     https://machinelearningmastery.com/use-word-embedding-layers-deep-learning-keras/
     '''
+    global PATH
     print('Loading embeddings...')
     vocabSize = len(tokenizer.word_index) + 1
     embeddings = np.zeros((vocabSize, 100))
-    with open('Data/Embeddings/glove.6B.100d.txt', 'r', encoding='utf-8') as f:
+    with open('glove.6B.100d.txt', 'r', encoding='utf-8') as f:
         for line in f:
             word, *values = line.split()
             # Only get words actually in our text
             if word in tokenizer.word_index:
                 index = tokenizer.word_index[word]
                 embeddings[index] = np.array(values, dtype='float32')
-    np.save('Data/Authors/glove-100d-embeddings.npy', embeddings)
+    np.save(PATH + 'glove-100d-embeddings.npy', embeddings)
 
 x, y = load()
 tokenizer = tokenize(x)
@@ -69,4 +73,4 @@ xTest = np.array(xTest)
 yTrain = np.array(yTrain)
 yTest = np.array(yTest)
 
-np.savez('Data/Authors/data.npz', xTrain=xTrain, yTrain=yTrain, xTest=xTest, yTest=yTest)
+np.savez(PATH + 'data.npz', xTrain=xTrain, yTrain=yTrain, xTest=xTest, yTest=yTest)

@@ -7,21 +7,20 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Bidirectional, Dense, Embedding, Input, LSTM
 from tensorflow.keras.models import Model
 
-NAME = 'Models/RNN/rnn-sb'
+NAME = '../output/rnn-sb'
+DATA = '../data'
 BATCH_SIZE = 256
 EPOCHS = 100 # 3
 
-print('Loading data...')
-with open('Data/Authors/tokenizer.pickle', 'rb') as f:
-    tokenizer = pickle.load(f)
-embeddings = np.load('Data/Authors/glove-100d-embeddings.npy')
-data = np.load('Data/Authors/data.npz')
+''' Load data '''
+embeddings = np.load(DATA + '/glove-100d-embeddings.npy')
+data = np.load(DATA + '/data.npz')
 xTrain = data['xTrain']
 xTest = data['xTest']
 yTrain = data['yTrain']
 yTest = data['yTest']
 
-print('Building model...')
+''' Build model '''
 sentence = Input(shape=(1000,)) # sequence length from dataset
 embedded = Embedding(len(embeddings), 100, weights=[embeddings], input_length=1000, trainable=True)(sentence)
 lstm = Bidirectional(LSTM(100))(embedded)
@@ -32,7 +31,7 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-print('Training...')
+''' Train '''
 trainSize = len(xTrain) # 500
 testSize = len(xTest) # trainSize // 5
 for i in range(5):
