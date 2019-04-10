@@ -1,10 +1,10 @@
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['numpy>=1.16']
+REQUIRED_PACKAGES = []
 
 setup(
-    name='trainer',
+    name='rnn',
     version='1.0',
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),

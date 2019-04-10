@@ -3,8 +3,9 @@ import pickle
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras.layers import BatchNormalization, Bidirectional, Dense, Embedding, Input, LSTM
+from tensorflow.keras.layers import Bidirectional, Dense, Embedding, Input, LSTM
 from tensorflow.keras.models import Model
+from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.python.lib.io import file_io
 
 if __name__ == '__main__':
@@ -24,12 +25,12 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size',
                         help='Batch size',
                         type=int,
-                        default=256
+                        default=512
                         )
     parser.add_argument('--epochs',
                         help='Epochs',
                         type=int,
-                        default=100
+                        default=40
                         )
 
     args = parser.parse_args()
@@ -51,19 +52,18 @@ if __name__ == '__main__':
     embedded = Embedding(len(embeddings), 100, weights=[embeddings], input_length=1000, trainable=True)(sentence)
     lstm = Bidirectional(LSTM(100))(embedded)
     preds = Dense(50, activation='softmax')(lstm)
-    #model = Model(sentence, preds)
     model = Model(sentence, preds)
     # same optimizer and loss as original paper
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
-                  metrics=['sparse_categorical_accuracy'])
+                  metrics=['accuracy'])
 
     ''' Train model 5 times '''
-    trainSize = len(xTrain)  # 500
-    testSize = len(xTest)  # trainSize // 5
+    trainSize = 5000 # len(xTrain)  # 500
+    testSize = 500 # len(xTest)  # trainSize // 5
     for i in range(5):
         checkpoint = ModelCheckpoint('model-best.h5',
-                                     monitor='val_sparse_categorical_crossentropy', 
+                                     monitor='val_acc', 
                                      verbose=1, 
                                      save_best_only=True)
         history = model.fit(xTrain[:trainSize], yTrain[:trainSize],
@@ -83,14 +83,13 @@ if __name__ == '__main__':
 
         # Save history for plotting later
         hist = history.history
-        print(hist.keys())
         with file_io.FileIO(OUTPUT_PATH + NAME + '-history-%d.csv' % i, 'w') as f:
             f.write('loss,acc,val_loss,val_acc\n')
             for k in range(EPOCHS):
                 f.write('%f,%f,%f,%f\n' % (hist['loss'][k],
-                                           hist['sparse_categorical_accuracy'][k],
+                                           hist['acc'][k],
                                            hist['val_loss'][k],
-                                           hist['val_sparse_categorical_accuracy'][k]))
+                                           hist['val_acc'][k]))
 
         # Restart session to re-initialize variables
         K.get_session().close()

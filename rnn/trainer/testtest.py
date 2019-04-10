@@ -8,36 +8,13 @@ from tensorflow.keras.models import Model
 from tensorflow.python.lib.io import file_io
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--data',
-                        help='Path to training data',
-                        required=True
-                        )
-    parser.add_argument('--output',
-                        help='Path to output folder',
-                        required=True
-                        )
-    parser.add_argument('--job-dir',
-                        help='Path to job folder',
-                        )
-    parser.add_argument('--batch_size',
-                        help='Batch size',
-                        type=int,
-                        default=256
-                        )
-    parser.add_argument('--epochs',
-                        help='Epochs',
-                        type=int,
-                        default=100
-                        )
 
     args = parser.parse_args()
 
-    DATA_PATH = args.data
-    OUTPUT_PATH = args.output
-    BATCH_SIZE = args.batch_size
-    EPOCHS = args.epochs
+    DATA_PATH = 'data'
+    OUTPUT_PATH = 'output'
+    BATCH_SIZE = 256
+    EPOCHS = 100
     NAME = '/rnn-sb'
 
     ''' Load data '''
@@ -56,14 +33,14 @@ if __name__ == '__main__':
     # same optimizer and loss as original paper
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
-                  metrics=['sparse_categorical_accuracy'])
+                  metrics=['accuracy'])
 
     ''' Train model 5 times '''
     trainSize = len(xTrain)  # 500
     testSize = len(xTest)  # trainSize // 5
-    for i in range(5):
+    for i in range(3, 5):
         checkpoint = ModelCheckpoint('model-best.h5',
-                                     monitor='val_sparse_categorical_crossentropy', 
+                                     monitor='val_acc', 
                                      verbose=1, 
                                      save_best_only=True)
         history = model.fit(xTrain[:trainSize], yTrain[:trainSize],
@@ -83,14 +60,13 @@ if __name__ == '__main__':
 
         # Save history for plotting later
         hist = history.history
-        print(hist.keys())
         with file_io.FileIO(OUTPUT_PATH + NAME + '-history-%d.csv' % i, 'w') as f:
             f.write('loss,acc,val_loss,val_acc\n')
             for k in range(EPOCHS):
                 f.write('%f,%f,%f,%f\n' % (hist['loss'][k],
-                                           hist['sparse_categorical_accuracy'][k],
+                                           hist['acc'][k],
                                            hist['val_loss'][k],
-                                           hist['val_sparse_categorical_accuracy'][k]))
+                                           hist['val_acc'][k]))
 
         # Restart session to re-initialize variables
         K.get_session().close()

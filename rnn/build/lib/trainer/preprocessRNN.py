@@ -1,10 +1,8 @@
 import numpy as np
 import pickle
-import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.python.lib.io import file_io
 
-PATH = ''
+PATH = '../data/'
 SPLIT = 45000 # 53678 examples into 45000 train and 8678 test
 
 def load():
@@ -56,8 +54,7 @@ def embed(tokenizer):
             if word in tokenizer.word_index:
                 index = tokenizer.word_index[word]
                 embeddings[index] = np.array(values, dtype='float32')
-    with open(PATH + 'glove-100d-embeddings.pickle', 'wb') as f:
-        pickle.dump(embeddings, f)
+    np.save(PATH + 'glove-100d-embeddings.npy', embeddings)
 
 x, y = load()
 tokenizer = tokenize(x)
@@ -76,5 +73,4 @@ xTest = np.array(xTest)
 yTrain = np.array(yTrain)
 yTest = np.array(yTest)
 
-with open(PATH + 'data.npz', 'wb') as f:
-    pickle.dump((xTrain, yTrain, xTest, yTest), f)
+np.savez(PATH + 'data.npz', xTrain=xTrain, yTrain=yTrain, xTest=xTest, yTest=yTest)

@@ -1,0 +1,10 @@
+setup.py
+rnn.egg-info/PKG-INFO
+rnn.egg-info/SOURCES.txt
+rnn.egg-info/dependency_links.txt
+rnn.egg-info/top_level.txt
+trainer/__init__.py
+trainer/model.py
+trainer/preprocessRNN.py
+trainer/solo_task.py
+trainer/task.py
