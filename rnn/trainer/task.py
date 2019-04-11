@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs',
                         help='Epochs',
                         type=int,
-                        default=100
+                        default=40
                         )
 
     args = parser.parse_args()
@@ -61,19 +61,30 @@ if __name__ == '__main__':
     ''' Train model 5 times '''
     trainSize = len(xTrain)  # 500
     testSize = len(xTest)  # trainSize // 5
-    for i in range(5):
-        checkpoint = ModelCheckpoint('model-best.h5',
-                                     monitor='val_sparse_categorical_crossentropy', 
+    for i in range(1, 5):
+        bestCheckpoint = ModelCheckpoint('model-best.h5',
+                                     monitor='val_loss', 
                                      verbose=1, 
                                      save_best_only=True)
+        epochCheckpoint = ModelCheckpoint('model-epoch-{epoch:d}.h5',
+                                          monitor='val_loss',
+                                          verbose=0,
+                                          save_best_only=False,
+                                          save_weights_only=False,
+                                          mode='auto',
+                                          period=1)
         history = model.fit(xTrain[:trainSize], yTrain[:trainSize],
                             batch_size=BATCH_SIZE,
                             epochs=EPOCHS,
                             validation_data=[xTest[:testSize], yTest[:testSize]],
-                            callbacks=[checkpoint])
+                            callbacks=[bestCheckpoint, epochCheckpoint])
         model.save('model-final.h5')  # Save model locally
 
-        # Copy best and final model to bucket
+        # Copy models to bucket
+        for e in range(EPOCHS):
+            with file_io.FileIO('model-%d-epoch-%d.h5' % (i, e + 1), 'rb') as input_f:
+                with file_io.FileIO(OUTPUT_PATH + NAME + '-epoch-%d.h5' % i, 'wb') as output_f:
+                    output_f.write(input_f.read())
         with file_io.FileIO('model-best.h5', 'rb') as input_f:
             with file_io.FileIO(OUTPUT_PATH + NAME + '-best-%d.h5' % i, 'wb') as output_f:
                 output_f.write(input_f.read())
