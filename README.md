@@ -4,6 +4,8 @@ qsub.sh is a simple script that removes the previous error and output logs, then
 
 job is a simple PBS job script. The first few lines are PBS directives (read more [on the OSC page here](https://www.osc.edu/supercomputing/batch-processing-at-osc/job-scripts) or run the command `man qsub` in the shell). The last few lines are the actual job to run. 
 
+qsub-i.sh starts a short, interactive, gpu-less job for debugging. 
+
 ### The directives:
 `-A` specifies the account. It's good practice to have and we should have the same one for this project.   
 `-l` specifies what resources you need, including nodes, processors per node, gpus, and wall time (max time your program can run). Right now it's low so I can debug this setup quickly, but I plan on increasing it when I'm running the actual experiments.   
