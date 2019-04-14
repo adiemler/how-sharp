@@ -40,7 +40,7 @@ if __name__ == '__main__':
     EPOCHS = args.epochs
     NAME = '/rnn-sb'
 
-    ''' Load data '''
+    ''' Load pre-processed data '''
     fs = file_io.FileIO(DATA_PATH + '/glove-100d-embeddings.pickle', 'rb')
     embeddings = pickle.load(fs)
     fs = file_io.FileIO(DATA_PATH + '/data.pickle', 'rb')

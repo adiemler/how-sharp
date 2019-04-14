@@ -1,0 +1,10 @@
+#PBS -A PAS1485
+#PBS -l walltime=00:01:00
+#PBS -l nodes=1:ppn=1
+#PBS -N imdb
+#PBS -e imdb.err
+#PBS -o imdb.out
+
+cd $PBS_O_WORKDIR
+module load python
+python trainer/imdbTask.py
