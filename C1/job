@@ -1,0 +1,16 @@
+#PBS -A PAS1485
+#PBS -l walltime=00:10:00
+#PBS -l nodes=1:ppn=1:gpus=1
+#PBS -N C1_test_run
+#PBS -e C1_test_run.err
+#PBS -o C1_test_run.out
+#PBS -m abe
+
+cd $PBS_O_WORKDIR
+module load python
+python ModelCreationGraph1.py --output ./Output --epochs 100
+python Graph2.py --output ./Output --number 1
+python Graph2.py --output ./Output --number 2
+python Graph2.py --output ./Output --number 3
+python Graph2.py --output ./Output --number 4
+python Graph2.py --output ./Output --number 5
