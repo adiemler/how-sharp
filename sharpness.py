@@ -9,8 +9,7 @@ import sys
 
 # batch size doesn't affect loss value, just batch size keras uses when 
 # calculating it. Set it as big as possible for faster evaluation
-BATCH_SIZE = 4096
-INPUT_DIM = 300
+BATCH_SIZE = 2048
 MODEL_PATH = sys.argv[1]
 LOSS = losses.binary_crossentropy
 
@@ -33,12 +32,15 @@ for i in range(len(model.layers)):
 n = len(weights)
 print('Loaded in %.2fs' % (time() - start))
 
-def f(z, A):
+def f(z, A=None):
     '''
     The loss function.
     Based on constrained variable z and dimension reduction matrix A.
     '''
-    adjustment = np.matmul(A, z)
+    if A == None:
+        adjustment = z
+    else:
+        adjustment = np.matmul(A, z)
     for i in range(len(weights)):
         weights[i] += adjustment[i]
         
@@ -60,49 +62,57 @@ def f(z, A):
     # if we want to maximize
     return -1 * metrics[0]
 
-def boundedMax(eps, A):
-    p = len(A[0])
-    Ainv = np.linalg.pinv(A)
-    AW = np.matmul(Ainv, weights)
-    bounds = []
-    # {z in Rp: -eps(|(Ainv * x)i| + 1) <= zi <= eps(|Ainv * x)i| + 1)}
-    for i in range(p):
-        lower = -eps * (abs(AW[i]) + 1)
-        upper = eps * (abs(AW[i]) + 1)
-        bounds.append((lower, upper))
+def boundedMax(eps, A=None):
+    if A == None:
+        p = n
+        bounds = []
+        for i in range(p):
+            lower = -eps * (abs(weights[i]) + 1)
+            upper = eps * (abs(weights[i]) + 1)
+            bounds.append((lower, upper))
+    else:
+        p = len(A[0])
+        Ainv = np.linalg.pinv(A)
+        AW = np.matmul(Ainv, weights)
+        bounds = []
+        # {z in Rp: -eps(|(Ainv * x)i| + 1) <= zi <= eps(|Ainv * x)i| + 1)}
+        for i in range(p):
+            lower = -eps * (abs(AW[i]) + 1)
+            upper = eps * (abs(AW[i]) + 1)
+            bounds.append((lower, upper))
 
     boundedMax = minimize(f,  # objective function
                           np.zeros(p),  # initial guess
                           args=(A),  # additional arguments
                           method='L-BFGS-B',  # method for optimization
                           bounds=bounds,  # limits for each dim of input
-                          options={maxiter: 10})  # max iterations, same as paper
+                          options={'maxiter': 1})  # max iterations, same as paper
     # we flipped the sign in f, so we'll flip it back here for the true value
     return -1 * boundedMax
 
 # Two different sharpness constants
 eps = [0.001, 0.0005]
-# Full space
-Afull = np.identity(n)
+
 # Random subspace
 cols = np.random.choice(n, size=100, replace=False)
-Arand = Afull[:,cols]
-As = [Afull, Arand]
+A = np.zeros((n, 100))
+for i in range(100):
+    A[cols[i]][i] = 1
 
 # final error of model is independent of eps and A
-print('test')
-print(model.evaluate(X, Y, batch_size=BATCH_SIZE)[0])
-error = f(np.zeros(n), np.identity(n))
-print(error * -1)
+error = f(np.zeros(n))
 
 print('Calculating sharpness...')
 start = time()
 for e in eps:
-    for A in As:
-        # phi(eps, A) = 100 * (max for z in C (f(x + Az)) - f(x)) / (1 + f(x))
-        bm = boundedMax(e, A)
-        sharpness = bm - error
-        sharpness /= 1 + error
-        sharpness *= 100
-        print('Eps=%f, p=%d, sharpness=%f' % (e, len(A[0]), sharpness))
+    # Don't calculate identity because that takes a 
+    # --- .fuck. ---
+    # ton of memory
+    bm = boundedMax(e)
+    sharpness = 100 * (bm - error) / (1 + error)
+    print('Eps=%f, p=%d, sharpness=%f' % (e, n, sharpness))
+
+    bm = boundedMax()
+    sharpness = 100 * (bm - error) / (1 + error)
+    print('Eps=%f, p=%d, sharpness=%f' % (e, 100, sharpness))
 print('Calculated in %.2fs' % (time() - start))
