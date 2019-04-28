@@ -16,11 +16,13 @@ parser = argparse.ArgumentParser()
 #Adds arguments to command line so this file doesn't need constant editing, stores in constant variables
 parser.add_argument('--output', help='Path to store output', required=True)
 parser.add_argument('--epochs', help='Epochs', type=int, default=40)
+parser.add_argument('--number', help='Model number to be generated. Must be greater than or equal to 1.', type=int, default=1)
 
 args = parser.parse_args()
 
 OUTPUT = args.output
 EPOCHS = args.epochs
+NUMBER = args.number
 
 batch_sizes = [256, 5000]
 
@@ -39,12 +41,12 @@ Y_test = np_utils.to_categorical(y_test, 10)
 img_size = (32, 32, 3)
 model = Sequential()
 model.add(Convolution2D(64, 5, 5, padding='same', input_shape=img_size))
-model.add(BatchNormalization(axis=1))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2), padding='same'))
 
 model.add(Convolution2D(64, 5, 5, padding='same'))
-model.add(BatchNormalization(axis=1))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3,3), strides=(2,2), padding='same'))
 
@@ -66,33 +68,31 @@ model.compile(loss='categorical_crossentropy',
 
 #train models for both batch sizes
 for BATCH_SIZE in batch_sizes:
-	#train model 5 times
-	for i in range(1, 6):
 
-		#Train model (modeled after code from Keskar et al.)
-		history = model.fit(X_train, Y_train,
-					batch_size=BATCH_SIZE,
-					nb_epoch=EPOCHS,
-					validation_data=(X_test, Y_test),
-					shuffle=True)
+	#Train model (modeled after code from Keskar et al.)
+	history = model.fit(X_train, Y_train,
+				batch_size=BATCH_SIZE,
+				nb_epoch=EPOCHS,
+				validation_data=(X_test, Y_test),
+				shuffle=True)
 
-		# Save accuracies for plotting
-		hist = history.history
-		#print(hist.keys())
-		with file_io.FileIO(OUTPUT + 'C1-accuracy-size-%i-num-%i.csv' % (BATCH_SIZE, i), 'w') as f: 
-			f.write('Training,Testing\n')
-			for j in range(EPOCHS):
-				f.write('%f,%f\n' % (hist['acc'][j],
-								   hist['val_acc'][j])) #Scale of 0-1, scale as needed when graphing
-		
-		#Save model for calculating other graphs
-		model_json = model.to_json()
-		with open("C1Model-size-%i-num-%i.json" % (BATCH_SIZE, i), "w") as json_file:
-			json_file.write(model_json)
-		#Save weights
-		model.save_weights("C1Model-size-%i-num-%i-weights.h5" % (BATCH_SIZE, i))
-		
-		# Create new model by restarting session
-		K.get_session().close()
-		K.set_session(tf.Session())
-		K.get_session().run(tf.global_variables_initializer())
+	# Save accuracies for plotting
+	hist = history.history
+	#print(hist.keys())
+	with file_io.FileIO(OUTPUT + 'C1-accuracy-size-%i-num-%i.csv' % (BATCH_SIZE, NUMBER), 'w') as f: 
+		f.write('Training,Testing\n')
+		for j in range(EPOCHS):
+			f.write('%f,%f\n' % (hist['acc'][j],
+							   hist['val_acc'][j])) #Scale of 0-1, scale as needed when graphing
+	
+	#Save model for calculating other graphs
+	model_json = model.to_json()
+	with open("C1Model-size-%i-num-%i.json" % (BATCH_SIZE, NUMBER), "w") as json_file:
+		json_file.write(model_json)
+	#Save weights
+	model.save_weights("C1Model-size-%i-num-%i-weights.h5" % (BATCH_SIZE, NUMBER))
+	
+	# Create new model by restarting session
+	K.get_session().close()
+	K.set_session(tf.Session())
+	K.get_session().run(tf.global_variables_initializer())
